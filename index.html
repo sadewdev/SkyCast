@@ -15,10 +15,10 @@
         
         body {
             font-family: 'Outfit', sans-serif;
-            overflow: hidden;
             background-color: #111;
             color: white;
             transition: background 0.5s ease;
+            overflow-x: hidden; /* Prevent horizontal scroll on body */
         }
 
         /* Dynamic Background Gradients */
@@ -77,6 +77,18 @@
         }
         .stat-box:hover { transform: translateY(-5px); background: rgba(0,0,0,0.3); }
 
+        /* Forecast Card */
+        .forecast-card {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 18px;
+            padding: 12px;
+            min-width: 80px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.2s;
+        }
+        .forecast-card:hover { background: rgba(0, 0, 0, 0.25); }
+
         .loading-spinner {
             border: 4px solid rgba(255, 255, 255, 0.1);
             border-left-color: white;
@@ -86,9 +98,39 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Custom Toast */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(220, 38, 38, 0.9); /* Red-600 */
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Custom Scrollbar for Forecast */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col items-center justify-center p-4 bg-default" id="body-bg">
+<body class="min-h-screen w-screen flex flex-col items-center justify-center p-4 bg-default" id="body-bg">
 
     <!-- Navbar / Header -->
     <nav class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10">
@@ -101,72 +143,88 @@
         </a>
     </nav>
 
-    <!-- Main Weather Card -->
-    <main class="w-full max-w-md glass-panel p-8 relative overflow-hidden slide-up">
-        
-        <!-- Search Section -->
-        <div class="relative mb-8 z-20">
-            <form onsubmit="handleSearch(event)" class="search-bar flex items-center px-4 py-3">
-                <i class="fa-solid fa-magnifying-glass text-white/70 mr-3"></i>
-                <input type="text" id="city-input" placeholder="Search City (e.g. Colombo)" class="bg-transparent border-none outline-none text-white w-full placeholder-white/60 font-medium">
-            </form>
-            <div id="loading" class="absolute right-4 top-3 hidden">
-                <div class="loading-spinner"></div>
-            </div>
-        </div>
+    <!-- Main Container -->
+    <div class="flex flex-col gap-6 w-full max-w-md slide-up z-20">
 
-        <!-- Weather Display -->
-        <div class="flex flex-col items-center text-center z-20 relative">
+        <!-- Main Weather Card -->
+        <main class="w-full glass-panel p-8 relative overflow-hidden">
             
-            <!-- City Name & Date -->
-            <h1 id="city-name" class="text-3xl font-bold mb-1">Colombo, LK</h1>
-            <p id="date-text" class="text-white/70 text-sm font-medium mb-6">Today, 12:00 PM</p>
-
-            <!-- Animated Sticker (The Hero) -->
-            <div class="w-64 h-64 -my-8 pulse-slow drop-shadow-2xl">
-                <!-- Using assets/clear.tgs as default -->
-                <lottie-player id="weather-sticker" background="transparent" speed="1" style="width: 100%; height: 100%;" loop autoplay></lottie-player>
-            </div>
-
-            <!-- Temperature -->
-            <div class="mt-4">
-                <h2 class="text-7xl font-bold relative inline-block">
-                    <span id="temp-val">28</span><span class="text-4xl absolute top-2 -right-6">°</span>
-                </h2>
-                <p id="weather-desc" class="text-xl font-medium mt-2 opacity-90">Clear Sky</p>
-            </div>
-
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-3 gap-4 w-full mt-10">
-                <div class="stat-box">
-                    <i class="fa-solid fa-wind text-white/60 mb-2"></i>
-                    <p class="text-sm font-bold"><span id="wind-speed">12</span> <span class="text-[10px] opacity-70">km/h</span></p>
-                </div>
-                <div class="stat-box">
-                    <i class="fa-solid fa-droplet text-white/60 mb-2"></i>
-                    <p class="text-sm font-bold"><span id="humidity">65</span> <span class="text-[10px] opacity-70">%</span></p>
-                </div>
-                <div class="stat-box">
-                    <i class="fa-solid fa-eye text-white/60 mb-2"></i>
-                    <p class="text-sm font-bold"><span id="feels-like">30</span><span class="text-[10px] opacity-70">°</span></p>
+            <!-- Search Section -->
+            <div class="relative mb-8 z-20">
+                <form onsubmit="handleSearch(event)" class="search-bar flex items-center px-4 py-3">
+                    <i class="fa-solid fa-magnifying-glass text-white/70 mr-3"></i>
+                    <input type="text" id="city-input" placeholder="Search City (e.g. Colombo)" class="bg-transparent border-none outline-none text-white w-full placeholder-white/60 font-medium">
+                </form>
+                <div id="loading" class="absolute right-4 top-3 hidden">
+                    <div class="loading-spinner"></div>
                 </div>
             </div>
 
-        </div>
+            <!-- Weather Display -->
+            <div class="flex flex-col items-center text-center z-20 relative">
+                
+                <!-- City Name & Date -->
+                <h1 id="city-name" class="text-3xl font-bold mb-1">Colombo, LK</h1>
+                <p id="date-text" class="text-white/70 text-sm font-medium mb-6">Today, 12:00 PM</p>
 
-    </main>
+                <!-- Animated Sticker (The Hero) -->
+                <div class="w-64 h-64 -my-8 pulse-slow drop-shadow-2xl">
+                    <lottie-player id="weather-sticker" background="transparent" speed="1" style="width: 100%; height: 100%;" loop autoplay></lottie-player>
+                </div>
 
-    <footer class="absolute bottom-4 text-white/40 text-xs font-medium">
+                <!-- Temperature -->
+                <div class="mt-4">
+                    <h2 class="text-7xl font-bold relative inline-block">
+                        <span id="temp-val">28</span><span class="text-4xl absolute top-2 -right-6">°</span>
+                    </h2>
+                    <p id="weather-desc" class="text-xl font-medium mt-2 opacity-90">Clear Sky</p>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-3 gap-4 w-full mt-10">
+                    <div class="stat-box">
+                        <i class="fa-solid fa-wind text-white/60 mb-2"></i>
+                        <p class="text-sm font-bold"><span id="wind-speed">12</span> <span class="text-[10px] opacity-70">km/h</span></p>
+                    </div>
+                    <div class="stat-box">
+                        <i class="fa-solid fa-droplet text-white/60 mb-2"></i>
+                        <p class="text-sm font-bold"><span id="humidity">65</span> <span class="text-[10px] opacity-70">%</span></p>
+                    </div>
+                    <div class="stat-box">
+                        <i class="fa-solid fa-eye text-white/60 mb-2"></i>
+                        <p class="text-sm font-bold"><span id="feels-like">30</span><span class="text-[10px] opacity-70">°</span></p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- 7-Day Forecast Section -->
+        <section class="glass-panel p-6 w-full">
+            <h3 class="text-lg font-bold mb-4 px-2 flex items-center gap-2">
+                <i class="fa-regular fa-calendar"></i> 7-Day Forecast
+            </h3>
+            <div id="forecast-container" class="flex gap-4 overflow-x-auto hide-scroll pb-2">
+                <!-- Forecast items will be injected here -->
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Error Toast -->
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <span id="toast-message">City not found!</span>
+    </div>
+
+    <footer class="mt-8 text-white/40 text-xs font-medium z-10">
         Powered by Open-Meteo & Zohox Dev
     </footer>
 
     <script>
-        // --- ROBUST ASSET LOADER ---
-        // Attempts to load local TGS. If fails (blob URL or missing file), falls back to public Lottie URL.
+        // --- ASSET LOADER ---
         async function loadTGS(url, elementId, weatherType) {
             const player = document.getElementById(elementId);
-            
-            // Public Fallback URLs (Standard Lottie JSONs)
             const fallbacks = {
                 'clear': 'https://lottie.host/575a71dc-d309-408d-b03a-3f938d829913/7z2f4j2G7v.json',
                 'clouds': 'https://assets2.lottiefiles.com/packages/lf20_t9ckmg5k.json',
@@ -177,28 +235,16 @@
             };
 
             try {
-                // Try fetching local asset
                 const response = await fetch(url);
-                if (!response.ok) throw new Error('Local asset request failed');
-                
+                if (!response.ok) throw new Error('Local asset failed');
                 const buffer = await response.arrayBuffer();
-                // Try decompressing assuming it is a TGS (Gzipped JSON)
                 const decompressed = fflate.gunzipSync(new Uint8Array(buffer));
                 const json = JSON.parse(new TextDecoder().decode(decompressed));
-                
-                // If successful, load blob
                 const blobUrl = URL.createObjectURL(new Blob([JSON.stringify(json)], {type: "application/json"}));
                 if(player) player.load(blobUrl);
-
             } catch (e) {
-                console.warn(`Local sticker failed (${url}). Switching to fallback.`, e);
-                // Load fallback URL based on weather type
-                if(player && fallbacks[weatherType]) {
-                    player.load(fallbacks[weatherType]);
-                } else if(player) {
-                    // Ultimate fallback
-                    player.load(fallbacks['clouds']);
-                }
+                if(player && fallbacks[weatherType]) player.load(fallbacks[weatherType]);
+                else if(player) player.load(fallbacks['clouds']);
             }
         }
 
@@ -213,7 +259,8 @@
         }
 
         async function getWeather(lat, lon) {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m&timezone=auto`;
+            // Updated to fetch daily forecast as well
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
             const res = await fetch(url);
             return await res.json();
         }
@@ -231,10 +278,24 @@
         function getWeatherDescription(code) {
              const codes = {
                  0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
-                 45: "Foggy", 51: "Light Drizzle", 61: "Rain", 63: "Heavy Rain",
+                 45: "Foggy", 51: "Drizzle", 61: "Rain", 63: "Heavy Rain",
                  71: "Snow", 95: "Thunderstorm"
              };
              return codes[code] || "Weather";
+        }
+
+        // Icon mapper for Forecast Cards (Font Awesome)
+        function getWeatherIcon(code) {
+            const type = getWeatherType(code);
+            const icons = {
+                'clear': 'fa-sun',
+                'clouds': 'fa-cloud',
+                'rain': 'fa-cloud-rain',
+                'thunder': 'fa-bolt',
+                'snow': 'fa-snowflake',
+                'mist': 'fa-smog'
+            };
+            return icons[type] || 'fa-cloud';
         }
 
         async function updateWeather(city) {
@@ -245,8 +306,9 @@
                 
                 const location = await getCoordinates(city);
                 const weatherData = await getWeather(location.latitude, location.longitude);
+                
+                // 1. Update Current Weather
                 const current = weatherData.current;
-
                 document.getElementById('city-name').innerText = `${location.name}, ${location.country_code}`;
                 document.getElementById('temp-val').innerText = Math.round(current.temperature_2m);
                 document.getElementById('weather-desc').innerText = getWeatherDescription(current.weather_code);
@@ -258,19 +320,43 @@
                 document.getElementById('date-text').innerText = now.toLocaleDateString('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric' });
 
                 const type = getWeatherType(current.weather_code);
-                
-                // Update Background
-                document.getElementById('body-bg').className = `h-screen w-screen flex flex-col items-center justify-center p-4 bg-${type}`;
-                
-                // Load Animation with fallback handling
-                // Passing 'type' as the 3rd argument is crucial for the fallback
+                document.getElementById('body-bg').className = `min-h-screen w-screen flex flex-col items-center justify-center p-4 bg-${type}`;
                 loadTGS(`assets/${type}.tgs`, 'weather-sticker', type);
 
+                // 2. Render Forecast
+                renderForecast(weatherData.daily);
+
             } catch (error) {
-                alert("City not found or connection error.");
+                showToast("City not found. Try again!");
                 console.error(error);
             } finally {
                 loader.classList.add('hidden');
+            }
+        }
+
+        function renderForecast(daily) {
+            const container = document.getElementById('forecast-container');
+            container.innerHTML = '';
+
+            // Daily arrays: time, weather_code, temperature_2m_max, temperature_2m_min
+            for(let i = 0; i < daily.time.length; i++) {
+                const dateStr = daily.time[i];
+                const date = new Date(dateStr);
+                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue...
+                const maxTemp = Math.round(daily.temperature_2m_max[i]);
+                const minTemp = Math.round(daily.temperature_2m_min[i]);
+                const code = daily.weather_code[i];
+                const iconClass = getWeatherIcon(code);
+
+                const card = document.createElement('div');
+                card.className = 'forecast-card flex flex-col items-center justify-between gap-2 shrink-0';
+                card.innerHTML = `
+                    <p class="text-sm font-medium text-white/70">${dayName}</p>
+                    <i class="fa-solid ${iconClass} text-xl my-1"></i>
+                    <p class="text-sm font-bold">${maxTemp}°</p>
+                    <p class="text-xs text-white/50">${minTemp}°</p>
+                `;
+                container.appendChild(card);
             }
         }
 
@@ -278,6 +364,15 @@
             e.preventDefault();
             const city = document.getElementById('city-input').value;
             if(city) updateWeather(city);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
         }
 
         window.addEventListener('DOMContentLoaded', () => {
