@@ -19,16 +19,16 @@ SkyCast delivers real-time weather data and a 7-day forecast in a beautifully de
 > A glimpse of SkyCast’s elegant design and smooth layout.
 
 ### Screenshot 01
-![SkyCast Main UI](./screenshots/screenshot-1.png)
+![SkyCast Main UI](.assets/screenshots/screenshot-1.png)
 
 ### Screenshot 02
-![7 Day Forecast](./screenshots/screenshot-2.png)
+![7 Day Forecast](.assets/screenshots/screenshot-2.png)
 
 ### Screenshot 03
-![Search Weather](./screenshots/screenshot-3.png)
+![Search Weather](.assets/screenshots/screenshot-3.png)
 
 ### Screenshot 04
-![SkyCast Weather](./screenshots/screenshot-4.png)
+![SkyCast Weather](.assets/screenshots/screenshot-4.png)
 
 ---
 
