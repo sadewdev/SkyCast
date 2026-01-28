@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SkyCast | Animated Weather</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Lottie & fflate for TGS -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <script src="https://unpkg.com/fflate@0.8.0/umd/index.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden;
+            background-color: #111;
+            color: white;
+            transition: background 0.5s ease;
+        }
+
+        /* Dynamic Background Gradients */
+        .bg-clear { background: linear-gradient(135deg, #00C6FF, #0072FF); }
+        .bg-clouds { background: linear-gradient(135deg, #bdc3c7, #2c3e50); }
+        .bg-rain { background: linear-gradient(135deg, #3a7bd5, #3a6073); }
+        .bg-thunder { background: linear-gradient(135deg, #141E30, #243B55); }
+        .bg-snow { background: linear-gradient(135deg, #E6DADA, #274046); }
+        .bg-mist { background: linear-gradient(135deg, #3e5151, #decba4); }
+        .bg-default { background: linear-gradient(135deg, #8E2DE2, #4A00E0); }
+
+        /* Glassmorphism Card */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 30px;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+        .search-bar:focus-within {
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+        }
+        ::placeholder { color: rgba(255, 255, 255, 0.6); }
+
+        /* Animations */
+        .slide-up { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { 
+            from { opacity: 0; transform: translateY(40px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .pulse-slow { animation: pulse 3s infinite; }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Weather Stats Grid */
+        .stat-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .stat-box:hover { transform: translateY(-5px); background: rgba(0,0,0,0.3); }
+
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-center p-4 bg-default" id="body-bg">
+
+    <!-- Navbar / Header -->
+    <nav class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-cloud-bolt text-2xl"></i>
+            <span class="font-bold text-xl tracking-wide">SkyCast</span>
+        </div>
+        <a href="https://github.com/Zohox-Dev" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-full text-sm font-medium transition-all backdrop-blur-md">
+            <i class="fa-brands fa-github mr-2"></i> GitHub
+        </a>
+    </nav>
+
+    <!-- Main Weather Card -->
+    <main class="w-full max-w-md glass-panel p-8 relative overflow-hidden slide-up">
+        
+        <!-- Search Section -->
+        <div class="relative mb-8 z-20">
+            <form onsubmit="handleSearch(event)" class="search-bar flex items-center px-4 py-3">
+                <i class="fa-solid fa-magnifying-glass text-white/70 mr-3"></i>
+                <input type="text" id="city-input" placeholder="Search City (e.g. Colombo)" class="bg-transparent border-none outline-none text-white w-full placeholder-white/60 font-medium">
+            </form>
+            <div id="loading" class="absolute right-4 top-3 hidden">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <!-- Weather Display -->
+        <div class="flex flex-col items-center text-center z-20 relative">
+            
+            <!-- City Name & Date -->
+            <h1 id="city-name" class="text-3xl font-bold mb-1">Colombo, LK</h1>
+            <p id="date-text" class="text-white/70 text-sm font-medium mb-6">Today, 12:00 PM</p>
+
+            <!-- Animated Sticker (The Hero) -->
+            <div class="w-64 h-64 -my-8 pulse-slow drop-shadow-2xl">
+                <!-- Using assets/clear.tgs as default -->
+                <lottie-player id="weather-sticker" background="transparent" speed="1" style="width: 100%; height: 100%;" loop autoplay></lottie-player>
+            </div>
+
+            <!-- Temperature -->
+            <div class="mt-4">
+                <h2 class="text-7xl font-bold relative inline-block">
+                    <span id="temp-val">28</span><span class="text-4xl absolute top-2 -right-6">°</span>
+                </h2>
+                <p id="weather-desc" class="text-xl font-medium mt-2 opacity-90">Clear Sky</p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-3 gap-4 w-full mt-10">
+                <div class="stat-box">
+                    <i class="fa-solid fa-wind text-white/60 mb-2"></i>
+                    <p class="text-sm font-bold"><span id="wind-speed">12</span> <span class="text-[10px] opacity-70">km/h</span></p>
+                </div>
+                <div class="stat-box">
+                    <i class="fa-solid fa-droplet text-white/60 mb-2"></i>
+                    <p class="text-sm font-bold"><span id="humidity">65</span> <span class="text-[10px] opacity-70">%</span></p>
+                </div>
+                <div class="stat-box">
+                    <i class="fa-solid fa-eye text-white/60 mb-2"></i>
+                    <p class="text-sm font-bold"><span id="feels-like">30</span><span class="text-[10px] opacity-70">°</span></p>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="absolute bottom-4 text-white/40 text-xs font-medium">
+        Powered by Open-Meteo & Zohox Dev
+    </footer>
+
+    <script>
+        // --- ROBUST ASSET LOADER ---
+        // Attempts to load local TGS. If fails (blob URL or missing file), falls back to public Lottie URL.
+        async function loadTGS(url, elementId, weatherType) {
+            const player = document.getElementById(elementId);
+            
+            // Public Fallback URLs (Standard Lottie JSONs)
+            const fallbacks = {
+                'clear': 'https://lottie.host/575a71dc-d309-408d-b03a-3f938d829913/7z2f4j2G7v.json',
+                'clouds': 'https://assets2.lottiefiles.com/packages/lf20_t9ckmg5k.json',
+                'rain': 'https://assets1.lottiefiles.com/packages/lf20_b82a7a.json',
+                'thunder': 'https://assets1.lottiefiles.com/packages/lf20_ku9l59.json',
+                'snow': 'https://assets1.lottiefiles.com/packages/lf20_5800.json',
+                'mist': 'https://assets1.lottiefiles.com/packages/lf20_k6w8j6.json'
+            };
+
+            try {
+                // Try fetching local asset
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Local asset request failed');
+                
+                const buffer = await response.arrayBuffer();
+                // Try decompressing assuming it is a TGS (Gzipped JSON)
+                const decompressed = fflate.gunzipSync(new Uint8Array(buffer));
+                const json = JSON.parse(new TextDecoder().decode(decompressed));
+                
+                // If successful, load blob
+                const blobUrl = URL.createObjectURL(new Blob([JSON.stringify(json)], {type: "application/json"}));
+                if(player) player.load(blobUrl);
+
+            } catch (e) {
+                console.warn(`Local sticker failed (${url}). Switching to fallback.`, e);
+                // Load fallback URL based on weather type
+                if(player && fallbacks[weatherType]) {
+                    player.load(fallbacks[weatherType]);
+                } else if(player) {
+                    // Ultimate fallback
+                    player.load(fallbacks['clouds']);
+                }
+            }
+        }
+
+        // --- WEATHER LOGIC ---
+        
+        async function getCoordinates(city) {
+            const url = `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1&language=en&format=json`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (!data.results) throw new Error("City not found");
+            return data.results[0];
+        }
+
+        async function getWeather(lat, lon) {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m&timezone=auto`;
+            const res = await fetch(url);
+            return await res.json();
+        }
+
+        function getWeatherType(code) {
+            if (code === 0) return 'clear';
+            if (code >= 1 && code <= 3) return 'clouds';
+            if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
+            if (code >= 71 && code <= 77) return 'snow';
+            if (code >= 95) return 'thunder';
+            if (code === 45 || code === 48) return 'mist';
+            return 'clouds';
+        }
+
+        function getWeatherDescription(code) {
+             const codes = {
+                 0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
+                 45: "Foggy", 51: "Light Drizzle", 61: "Rain", 63: "Heavy Rain",
+                 71: "Snow", 95: "Thunderstorm"
+             };
+             return codes[code] || "Weather";
+        }
+
+        async function updateWeather(city) {
+            const loader = document.getElementById('loading');
+            
+            try {
+                loader.classList.remove('hidden');
+                
+                const location = await getCoordinates(city);
+                const weatherData = await getWeather(location.latitude, location.longitude);
+                const current = weatherData.current;
+
+                document.getElementById('city-name').innerText = `${location.name}, ${location.country_code}`;
+                document.getElementById('temp-val').innerText = Math.round(current.temperature_2m);
+                document.getElementById('weather-desc').innerText = getWeatherDescription(current.weather_code);
+                document.getElementById('wind-speed').innerText = current.wind_speed_10m;
+                document.getElementById('humidity').innerText = current.relative_humidity_2m;
+                document.getElementById('feels-like').innerText = Math.round(current.apparent_temperature);
+                
+                const now = new Date();
+                document.getElementById('date-text').innerText = now.toLocaleDateString('en-US', { weekday: 'long', hour: 'numeric', minute: 'numeric' });
+
+                const type = getWeatherType(current.weather_code);
+                
+                // Update Background
+                document.getElementById('body-bg').className = `h-screen w-screen flex flex-col items-center justify-center p-4 bg-${type}`;
+                
+                // Load Animation with fallback handling
+                // Passing 'type' as the 3rd argument is crucial for the fallback
+                loadTGS(`assets/${type}.tgs`, 'weather-sticker', type);
+
+            } catch (error) {
+                alert("City not found or connection error.");
+                console.error(error);
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        function handleSearch(e) {
+            e.preventDefault();
+            const city = document.getElementById('city-input').value;
+            if(city) updateWeather(city);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateWeather("Colombo");
+        });
+
+    </script>
+</body>
+</html>
