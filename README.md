@@ -56,5 +56,32 @@ SkyCast delivers real-time weather data and a 7-day forecast in a beautifully de
 
 ---
 
-## 📂 Project Structure
+## 🎯 Future Improvements
+
+🌙 Dark / Light mode toggle
+📍 Auto-detect user location
+🎞️ Weather-based animations
+📊 Hourly forecast view
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome!
+Feel free to fork, improve, and submit a pull request.
+
+---
+
+## 📜 Credits
+
+- 🌦️ Weather Data: Open-Meteo API
+- 💻 Developed by [Sadew Dev](https://github.com/sadewdev)
+
+---
+
+## ⭐ Show Your Support
+
+If you like this project, don’t forget to:
+⭐ Star this repository
+🔁 Share it with others
 
